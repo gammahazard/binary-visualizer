@@ -1,0 +1,15 @@
+{
+  "name": "binary-viz",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "binary_viz_bg.wasm",
+    "binary_viz.js",
+    "binary_viz.d.ts"
+  ],
+  "main": "binary_viz.js",
+  "types": "binary_viz.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

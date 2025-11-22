@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Binary Visualizer</title>
+    <style>
+        /* --- basic layout setup --- */
+        body { 
+            background-color: #111; 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin-top: 50px; 
+        }
+        .container {
+            background: #1c1c1c;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 500px; /* made slightly wider to fit the equals sign */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            box-sizing: border-box;
+        }
+        label { font-size: 0.9rem; color: #aaa; margin-top: 10px; display: block; }
+        h2 { text-align: center; margin-bottom: 20px; color: #ff9f0a; }
+
+        /* container for the visualization output */
+        #viz-area {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+            min-height: 100px; /* keeps the box stable */
+        }
+
+        /* --- style for binary -> decimal (horizontal cards) --- */
+        .viz-container {
+            display: flex;
+            justify-content: center;
+            /* reverse row so 2^0 is on the right, but the total stays at the end */
+            flex-direction: row; 
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        /* the individual bit cards */
+        .card {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            width: 55px;
+            transition: all 0.3s ease;
+        }
+        /* active bit (1) - orange */
+        .card.active {
+            background: #ff9f0a; 
+            color: black;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(255, 159, 10, 0.3);
+        }
+        /* inactive bit (0) - ghosted */
+        .card.dim { opacity: 0.3; }
+
+        /* --- NEW: EQUALS SIGN AND TOTAL --- */
+        .equals-item {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #888;
+            margin: 0 5px;
+        }
+        .card.total {
+            background: #32d74b; /* bright green */
+            color: black;
+            border: 2px solid #32d74b;
+            transform: scale(1.1); /* slightly larger */
+            box-shadow: 0 0 15px rgba(50, 215, 75, 0.4);
+            font-weight: bold;
+        }
+        
+        .bit { font-size: 1.4rem; font-weight: bold; }
+        .math { font-size: 0.7rem; margin-top: 5px; }
+        .result { font-size: 0.8rem; font-weight: bold; margin-top: 5px; }
+
+        /* --- style for decimal -> binary (vertical steps) --- */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .step-card {
+            background: #2c2c2c;
+            border-left: 4px solid #0a84ff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 4px;
+            align-items: center;
+        }
+        .calc { font-family: monospace; color: #ddd; }
+        .rem { font-weight: bold; color: #aaa; }
+        .bit-highlight { color: #0a84ff; font-size: 1.2rem; margin-left: 5px; }
+        .instruction { text-align: center; font-size: 0.8rem; color: #666; margin-top: 10px; font-style: italic; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Binary Visualizer</h2>
+        
+        <label>Decimal Number (Type here for Division)</label>
+        <input type="number" id="decimalInput" placeholder="e.g. 13">
+
+        <label>Binary String (Type here for Powers)</label>
+        <input type="text" id="binaryInput" placeholder="e.g. 1101" autocomplete="off">
+
+        <div id="viz-area"></div>
+    </div>
+
+    <script type="module">
+        // import the wasm functions created by wasm-pack
+        // make sure 'binary_viz.js' matches the name in your pkg folder
+        import init, { 
+            decimal_to_binary, 
+            binary_to_decimal, 
+            render_explanation, 
+            render_decimal_viz 
+        } from './pkg/binary_viz.js';
+
+        async function run() {
+            // load the wasm memory
+            await init();
+
+            const decInput = document.getElementById('decimalInput');
+            const binInput = document.getElementById('binaryInput');
+            const vizArea  = document.getElementById('viz-area');
+
+            // --- logic for when user types in decimal box ---
+            decInput.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                
+                if (!isNaN(val)) {
+                    // 1. update the binary text box
+                    binInput.value = decimal_to_binary(val);
+                    // 2. render the vertical division steps
+                    vizArea.innerHTML = render_decimal_viz(val);
+                } else {
+                    binInput.value = "";
+                    vizArea.innerHTML = "";
+                }
+            });
+
+            // --- logic for when user types in binary box ---
+            binInput.addEventListener('input', (e) => {
+                const val = e.target.value;
+                
+                // 1. update the decimal text box
+                decInput.value = binary_to_decimal(val);
+
+                // 2. check if input is valid binary (only 0s and 1s)
+                if (/^[01]+$/.test(val)) {
+                    // render the horizontal bit cards with the total sum
+                    vizArea.innerHTML = render_explanation(val);
+                } else {
+                    vizArea.innerHTML = "<p style='text-align:center; color:#555;'>enter binary to visualize</p>";
+                }
+            });
+        }
+
+        run();
+    </script>
+</body>
+</html>

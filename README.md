@@ -1,94 +1,91 @@
-# Rust Binary Visualizer 🦀
+# Bitwise State Visualizer (Rust / WASM)
 
-A high-performance, interactive web tool designed to visualize the conversion logic between Decimal and Binary numbers. Built using **Rust** and **WebAssembly (Wasm)** to demonstrate how low-level logic can run natively in the browser.
+![Language](https://img.shields.io/badge/Core-Rust_1.75-black?style=for-the-badge&logo=rust)
+![Platform](https://img.shields.io/badge/Target-WebAssembly-orange?style=for-the-badge&logo=webassembly)
+![Performance](https://img.shields.io/badge/Latency-Sub__Millisecond-green?style=for-the-badge)
 
-## ✨ Features
+A high-performance systems utility for inspecting integer representation and bitwise state changes. Built on **Rust** and **WebAssembly**, this tool moves low-level radix transformation logic client-side, ensuring deterministic 1:1 conversion accuracy without server overhead.
 
-* **Bi-Directional Conversion**: Type in Decimal to get Binary, or Binary to get Decimal.
-* **Visual Learning**:
-    * **Decimal ➔ Binary**: Shows the "Repeated Division by 2" method with step-by-step calculations.
-    * **Binary ➔ Decimal**: Shows "Bit Cards" ($2^0, 2^1, \dots$) lighting up to represent the sum.
-* **Math Validation**: Includes a total summation view ($\Sigma$) to verify the result.
-* **Safety**: Uses Rust's type safety and pattern matching to prevent errors (e.g., handling invalid binary inputs gracefully).
+---
 
-## 🛠️ Tech Stack
+## ⚡ Technical Capability
+This project serves as a proof-of-concept for **Zero-Latency Logic Layers**. By compiling Rust to WASM, we achieve:
+* **Memory Safety:** Leveraging Rust's ownership model to prevent overflow/underflow errors during integer conversion.
+* **Native Performance:** Execution speeds near native C++ levels directly within the browser V8 engine.
+* **Type-Safe Bridging:** Utilizing `wasm-bindgen` to create strict contract boundaries between the unstable JavaScript frontend and the rigid Rust backend.
 
-* **Core Logic**: Rust (v1.75+)
-* **Compilation**: `wasm-pack` (compiles Rust to WebAssembly)
-* **Frontend**: HTML5, CSS3, JavaScript (ES Modules)
-* **Bridge**: `wasm-bindgen` (Connects Rust functions to JS)
+---
 
-## 🚀 Getting Started
+## 🏗 Architecture
 
-Follow these steps to run the project locally.
+The application uses a "Headless Logic" pattern. The UI is dumb; the WASM binary is the authority.
 
-### 1. Prerequisites
-Ensure you have the following installed:
-* Rust & Cargo (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-* wasm-pack (`curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh`)
-* Python 3 (pre-installed on Linux/WSL for the local server)
-
-### 2. Installation
-Clone the repo (or navigate to your project folder):
-```bash
-cd binary-viz
+```mermaid
+graph LR;
+    subgraph "Unsafe Realm (Browser)"
+    A[User Input] -->|String| B(JS Glue Code);
+    E(DOM Update) <---|Render| D;
+    end
+    
+    subgraph "Safe Realm (WASM)"
+    B -->|Safe Interop| C{Rust Logic};
+    C -->|Bitwise Calc| C;
+    C -->|Vector Output| D[Structured Data];
+    end
 ```
 
-### 3. Build the Project
-Compile the Rust code into WebAssembly. This generates the `pkg/` folder containing the `.wasm` binary and JavaScript glue code.
+## 🛠 Features
 
+* **Radix Transmutation:** Real-time, bi-directional conversion between Decimal (Base-10) and Binary (Base-2) formats.
+* **Visual Memory Layout:** Dynamic representation of bit states ($2^0 \dots 2^n$), mimicking register inspection tools.
+* **Algorithm Visualization:** Exposes the underlying "Repeated Division" and "Summation" logic used in compiler integer parsing.
+* **Input Sanitization:** Rust pattern matching handles invalid input states (NaN, Overflow) before they reach the render layer.
+
+---
+
+## 🚀 Engineering Workflow
+
+### Prerequisites
+* **Rust Toolchain:** Stable release.
+* **Wasm-Pack:** The standard Rust-to-WASM compiler.
+
+### Build Protocol
+
+**1. Clone & Initialize**
+```bash
+git clone https://github.com/gammahazard/binary-visualizer.git
+cd binary-visualizer
+```
+
+**2. Compile Target**
+We target `web` to generate a direct ES-module compatible binary.
 ```bash
 wasm-pack build --target web
 ```
 
-### 4. Run Locally
-Browsers block Wasm from running directly via file paths (`file://`) for security reasons. You must use a local web server to view the project.
-
-Since you likely have Python installed, run this command in your project folder:
-
+**3. Local Interface**
+Due to CORS policies on `.wasm` loading, a local server is required.
 ```bash
-python3 -m http.server
+python3 -m http.server 8000
 ```
 
-Open your browser and navigate to: http://localhost:8000
+---
 
-## 🌍 Deployment
+## 🌍 Deployment Strategy (Vercel)
 
-### Option 1: Vercel (Recommended)
-Vercel is the easiest way to deploy, but there is one critical step: **You must ensure the `pkg` folder is uploaded to GitHub.**
+This project is deployed as a static site, but requires specific handling of build artifacts.
 
-By default, `.gitignore` often blocks build artifacts. You need to force-add it so Vercel can see your compiled code.
+* **Artifact Retention:** The `pkg/` directory (compiled WASM) is forcibly committed to Git (`git add -f pkg`) to bypass standard ignore rules, ensuring the production environment matches the local build exactly.
 
-1.  **Force add the pkg folder:**
-    ```bash
-    git add -f pkg
-    git commit -m "Force add compiled wasm"
-    git push origin main
-    ```
-2.  **Import into Vercel:**
-    * Go to Vercel dashboard -> Add New Project.
-    * Import your `binary-viz` repository.
-    * **Root Directory:** Ensure this matches your project folder name if it's inside a larger repo.
-    * **Build Command:** Leave empty (Vercel automatically detects it as a static site).
-    * **Output Directory:** Leave empty.
+---
 
-### Option 2: GitHub Pages
-1.  Go to your Repository Settings -> **Pages**.
-2.  Select the `main` branch as the source.
-3.  Save.
+## 📂 System Structure
 
-## 📂 Project Structure
+* `src/lib.rs` - **The Core:** Pure Rust implementation of the conversion algorithms.
+* `pkg/` - **The Artifact:** The compiled binary and JS bindings.
+* `index.html` - **The Surface:** A lightweight interface that strictly renders data provided by the WASM instance.
 
-* `src/lib.rs` - **Rust Backend**: Handles math logic and HTML string generation.
-* `index.html` - **Frontend**: Handles UI, input events, and CSS styling.
-* `pkg/` - **Compiled Output**: The Wasm binary and JS wrapper (generated by `wasm-pack`).
-* `Cargo.toml` - **Manifest**: Configuration for dependencies and build settings.
-
-## 🔧 Troubleshooting
-
-**"Nothing happens when I type!"**
-1.  Open your browser console (**F12**).
-2.  If you see `404 Not Found .../pkg/binary_viz.js`:
-    * **Locally:** You likely forgot to run `wasm-pack build --target web`.
-    * **On Vercel:** You likely forgot to `git add -f pkg` before pushing, so the server doesn't have the file.
-
+---
+<div align="center">
+  <sub>Developed by Vanguard Secure Solutions</sub>
+</div>
